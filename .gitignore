@@ -1,0 +1,4 @@
+Data/
+# Pycache
+__pycache__/
+LM_Backend/__pycache__/
