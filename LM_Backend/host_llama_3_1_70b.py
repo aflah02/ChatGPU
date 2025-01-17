@@ -263,9 +263,8 @@ class Model:
         start = time.monotonic_ns()
         request_id = uuid4()
         print(f"Generating response to request {request_id}")
-        print(request)
 
-        query = request.get("text") # {"text": "What is a wrap?"}
+        query = request.get("text")
 
         request_max_tokens = request.get("max_tokens")
 
