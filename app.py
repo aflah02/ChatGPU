@@ -235,9 +235,10 @@ with st.sidebar:
     st.button('Clear Chat', 
         icon=":material/delete:", 
         use_container_width=True, 
-        on_click=clear_chat, help="Clear Ongoing Chat")
+        on_click=clear_chat, help="Clear Ongoing Chat",
+        disabled=st.session_state['model_reply_phase'])
     
-    allow_log_requests = st.checkbox("Help improve the app by using your queries", key="log_requests", value=True, help="We do not store any personal information, only the queries you ask. Hence we cannot map queries to users.")
+    allow_log_requests = st.checkbox("Help improve the app by using your queries", key="log_requests", value=True, help="We do not store any personal information, only the queries you ask. Hence we cannot map queries to users.", disabled=st.session_state['model_reply_phase'])
     
     st.markdown("---")
 
@@ -253,8 +254,7 @@ with st.sidebar:
         'What are Registers?',
     ]
     st.subheader("Suggested Questions for Getting Started:")
-    selection = st.pills("", sample_questions, selection_mode="single", label_visibility="collapsed", key='question_pills', 
-    on_change=new_default_question_selected, disabled=st.session_state['model_reply_phase'])
+    selection = st.pills("", sample_questions, selection_mode="single", label_visibility="collapsed", key='question_pills', on_change=new_default_question_selected, disabled=st.session_state['model_reply_phase'])
 
 def make_request(user_query):
     url = backend_url
