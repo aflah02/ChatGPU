@@ -233,22 +233,6 @@ with st.sidebar:
     selection = st.pills("", sample_questions, selection_mode="single", label_visibility="collapsed", key='question_pills', 
     on_change=new_default_question_selected, disabled=st.session_state['model_reply_phase'])
 
-# def make_request(user_query):
-#     client = OpenAI(
-#         api_key="8e53b376-9815-43fc-b38a-cd4882da2e70",
-#         base_url="https://api.sambanova.ai/v1",
-#     )
-
-#     response = client.chat.completions.create(
-#         model='Meta-Llama-3.1-70B-Instruct',
-#         messages=[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":user_query}],
-#         temperature =  0.1,
-#         top_p = 0.1,
-#         stream=True
-#     )
-
-#     return response
-
 def make_request(user_query):
     url = "https://aflah02--sglang-meta-llama-meta-llama-3-1-70b-instruct-m-a64a7f.modal.run/"
     headers = {
