@@ -180,6 +180,7 @@ from uuid import uuid4
 from fastapi.responses import StreamingResponse
 import modal
 import requests
+import random
 
 GPU_TYPE = os.environ.get("GPU_TYPE", "A100-80GB")
 GPU_COUNT = os.environ.get("GPU_COUNT", 4)
@@ -213,7 +214,7 @@ sgl_image = (
     )
 )
 
-app = modal.App("sglang-" + MODEL_NAME.replace("/", "-").replace(".", "-"),)
+app = modal.App(f"") # Removed to prevent Backend URL Leak
 
 MODEL_CHAT_TEMPLATE = "llama-3-instruct"
 

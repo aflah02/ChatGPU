@@ -176,6 +176,16 @@ The NVIDIA Runtime Compiler (`nvrtc`) is a runtime compilation library for CUDA 
 import streamlit as st
 from openai import OpenAI
 import requests
+import argparse
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument("--backend_url")
+
+args = argparser.parse_args()
+
+backend_url = args.backend_url
+
+print(f"backend_url: {backend_url}")
 
 st.set_page_config(
     page_title="ChatGPU",
@@ -234,7 +244,7 @@ with st.sidebar:
     on_change=new_default_question_selected, disabled=st.session_state['model_reply_phase'])
 
 def make_request(user_query):
-    url = "https://aflah02--sglang-meta-llama-meta-llama-3-1-70b-instruct-m-a64a7f.modal.run/"
+    url = backend_url
     headers = {
         "accept": "application/json",
         "Content-Type": "application/json"
@@ -248,7 +258,7 @@ def make_request(user_query):
 
     if response.status_code == 200:
         for chunk in response.iter_content(chunk_size=128):
-            if chunk:  # Filter out keep-alive new lines
+            if chunk: 
                 yield chunk.decode("utf-8")
     else:
         yield f"Request failed with status code {response.status_code}: {response.text}"

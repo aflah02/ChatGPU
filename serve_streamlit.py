@@ -3,7 +3,7 @@
 import shlex
 import subprocess
 from pathlib import Path
-
+import os
 import modal
 
 streamlit_script_local_path = Path(__file__).parent / "app.py"
@@ -27,9 +27,11 @@ if not streamlit_script_local_path.exists():
 
 @app.function(
     allow_concurrent_inputs=100,
+    secrets=[modal.Secret.from_name("ChatGPU-Secrets")]
 )
 @modal.web_server(8000)
 def run():
     target = shlex.quote(streamlit_script_remote_path)
-    cmd = f"streamlit run {target} --server.port 8000 --server.enableCORS=false --server.enableXsrfProtection=false"
+    backend_URL = os.environ["Backend_URL"]
+    cmd = f"streamlit run {target} --server.port 8000 --server.enableCORS=false --server.enableXsrfProtection=false -- --backend_url {backend_URL}"
     subprocess.Popen(cmd, shell=True)
