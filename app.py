@@ -225,9 +225,9 @@ if "question_pills" not in st.session_state:
 
 with st.sidebar:
     st.button('Clear Chat', 
-    icon=":material/delete:", 
-    use_container_width=True, 
-    on_click=clear_chat, help="Clear Ongoing Chat")
+        icon=":material/delete:", 
+        use_container_width=True, 
+        on_click=clear_chat, help="Clear Ongoing Chat")
     def new_default_question_selected():
         st.session_state['populate_default_question_in_chat_input'] = True
 

@@ -262,7 +262,7 @@ class Model:
 
         start = time.monotonic_ns()
         request_id = uuid4()
-        print(f"Generating response to request {request_id}")
+        # print(f"Generating response to request {request_id}")
 
         query = request.get("text")
 
@@ -292,7 +292,8 @@ class Model:
         # Return the streamed response
         return StreamingResponse(wrapper(), media_type="text/plain")   
 
-        # LOGS FROM NON-STREAMING MODE
+        # Commented Out Code for Returning without Streaming and Logging
+
         # model_generation = state["response"]
 
         
