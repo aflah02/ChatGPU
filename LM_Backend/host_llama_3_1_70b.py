@@ -180,7 +180,9 @@ from uuid import uuid4
 from fastapi.responses import StreamingResponse
 import modal
 import requests
+import json
 import random
+import time
 
 GPU_TYPE = os.environ.get("GPU_TYPE", "A100-80GB")
 GPU_COUNT = os.environ.get("GPU_COUNT", 4)
@@ -194,10 +196,17 @@ MINUTES = 60  # seconds
 MODEL_NAME = "meta-llama/Meta-Llama-3.1-70B-Instruct"
 MODELS_DIR = "/llamas"
 
+LOGGING_DIR = "/ChatGPU_Artifacts" 
+
 try:
     volume = modal.Volume.lookup("llamas", create_if_missing=False)
 except modal.exception.NotFoundError:
     raise Exception("Download models first with modal run download_llama.py")
+
+try:
+    chatgpu_volume = modal.Volume.lookup("ChatGPU_Logs", create_if_missing=True)
+except modal.exception.NotFoundError:
+    raise Exception("Unable to find/create ChatGPU_Logs volume")
 
 sgl_image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -234,7 +243,7 @@ class Colors:
     container_idle_timeout=5 * MINUTES,
     allow_concurrent_inputs=100,
     image=sgl_image,
-    volumes={MODELS_DIR: volume},
+    volumes={MODELS_DIR: volume, LOGGING_DIR: chatgpu_volume},
     keep_warm=1
 )
 class Model:
@@ -249,8 +258,7 @@ class Model:
             tp_size=GPU_COUNT,  # t_ensor p_arallel size, number of GPUs to split the model over
             log_level=SGL_LOG_LEVEL,
         )
-        print("Chat Template:", MODEL_CHAT_TEMPLATE, sgl.lang.chat_template.get_chat_template(MODEL_CHAT_TEMPLATE))
-        print
+
         self.runtime.endpoint.chat_template = (
             sgl.lang.chat_template.get_chat_template(MODEL_CHAT_TEMPLATE)
         )
@@ -262,28 +270,48 @@ class Model:
 
         start = time.monotonic_ns()
         request_id = uuid4()
-        # print(f"Generating response to request {request_id}")
 
         query = request.get("text")
-
         request_max_tokens = request.get("max_tokens")
+        log_requests = request.get("log_requests")
+        old_messages = request.get("old_messages")
+        session_id = request.get("session_id")
+
+        if log_requests:
+            print(f"Received request {request_id} with query: {query} and session_id: {session_id}")
+            print(f"Max tokens: {request_max_tokens}")
+            print(f"Old messages: {old_messages}")
 
         @sgl.function
-        def run_through_model(s, system_prompt, user_prompt, max_tokens):
+        def run_through_model(s, system_prompt, old_messages, user_prompt, max_tokens):
             s += sgl.system(system_prompt)
+            for om in old_messages:
+                role = om['role']
+                content = om['content']
+                if role == 'user':
+                    s += sgl.user(content)
+                elif role == 'assistant':
+                    s += sgl.assistant(content)
             s += sgl.user(user_prompt)
             s += sgl.assistant(sgl.gen("response", max_tokens=max_tokens))
 
         state = run_through_model.run(
             system_prompt = SYSTEM_PROMPT,
+            old_messages = old_messages,
             user_prompt = query,
             max_tokens = request_max_tokens,
             stream=True
         )
 
         def generate_sub_fn():
+            full_text = ""
             for out in state.text_iter(var_name="response"):
                 yield out  # Stream each part of the response
+                full_text += out
+            if log_requests:
+                with open(f"{LOGGING_DIR}/{session_id}.json", "w") as f:
+                    entire_trace = old_messages + [{"role": "user", "content": query}, {"role": "assistant", "content": full_text}]
+                    json.dump(entire_trace, f, indent=4)
 
         # Measure total time taken for the entire request
         def wrapper():

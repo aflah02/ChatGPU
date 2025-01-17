@@ -177,6 +177,7 @@ import streamlit as st
 from openai import OpenAI
 import requests
 import argparse
+import uuid
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("--backend_url")
@@ -194,6 +195,9 @@ st.set_page_config(
     # initial_sidebar_state="expanded",
 )
 
+def generate_session_id():
+    return str(uuid.uuid4())
+
 st.markdown("<h1 style='text-align: center;'>ChatGPU 💬</h1>", unsafe_allow_html=True)
 st.markdown(
     "<h3 style='text-align: center;'>Ask questions about GPUs and CUDA programming</h3>",
@@ -206,6 +210,7 @@ def clear_chat():
     st.session_state.chat_input = ""
     st.session_state.populate_default_question_in_chat_input = False
     st.session_state.question_pills = None
+    st.session_state.session_id = generate_session_id()
 
 # Initialize Session States -
 if "messages" not in st.session_state:
@@ -223,11 +228,19 @@ if "populate_default_question_in_chat_input" not in st.session_state:
 if "question_pills" not in st.session_state:
     st.session_state.question_pills = None
 
+if "session_id" not in st.session_state:
+    st.session_state.session_id = generate_session_id()
+
 with st.sidebar:
     st.button('Clear Chat', 
         icon=":material/delete:", 
         use_container_width=True, 
         on_click=clear_chat, help="Clear Ongoing Chat")
+    
+    allow_log_requests = st.checkbox("Help improve the app by using your queries", key="log_requests", value=True, help="We do not store any personal information, only the queries you ask. Hence we cannot map queries to users.")
+    
+    st.markdown("---")
+
     def new_default_question_selected():
         st.session_state['populate_default_question_in_chat_input'] = True
 
@@ -251,8 +264,14 @@ def make_request(user_query):
     }
     data = {
         "text": user_query,
-        "max_tokens": 2000
+        "max_tokens": 2000,
+        "log_requests": st.session_state['log_requests'],
+        # Old Messages should skip last message as it is the current message and keep all other messages
+        "old_messages": st.session_state.messages[:-1] if st.session_state.messages else [],
+        "session_id": st.session_state.session_id
     }
+
+    print(data)
 
     response = requests.post(url, headers=headers, json=data, stream=True)
 
@@ -269,8 +288,6 @@ chat_container = st.container()
 for message in st.session_state.messages:
     with chat_container.chat_message(message["role"]):
         st.markdown(message["content"])
-
-
 
 split_cols = st.columns([14, 1])
 
